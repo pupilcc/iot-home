@@ -1,4 +1,4 @@
-FROM golang:1.21.1 as builder
+FROM golang:1.24.0 AS builder
 RUN apt-get update && apt-get install -y gcc libc6-dev
 WORKDIR /go/src/iot-sms
 COPY go.mod .
