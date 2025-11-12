@@ -50,6 +50,10 @@ func main() {
 	if err != nil {
 		log.Printf("Error subscribing to %s: %v", mqtt.TopicEspSms, err)
 	}
+	err = mqttClient.Subscribe(mqtt.TopicEspDevice, 1, mqtt.HandleDeviceMessage)
+	if err != nil {
+		log.Printf("Error subscribing to %s: %v", mqtt.TopicEspDevice, err)
+	}
 
 	// Start the service
 	e.Logger.Fatal(e.Start(":1323"))

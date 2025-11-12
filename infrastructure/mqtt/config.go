@@ -1,7 +1,8 @@
 package mqtt
 
 const (
-	TopicEspSms = "esp32/sms"
+	TopicEspSms    = "esp32/sms"
+	TopicEspDevice = "esp32/device"
 )
 
 // MQTTConfig 包含 MQTT 连接所需的配置

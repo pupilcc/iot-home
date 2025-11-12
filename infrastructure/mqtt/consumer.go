@@ -86,3 +86,38 @@ func HandleSmsMessage(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("SMS notification sent to Bark successfully.")
 	}
 }
+
+func HandleDeviceMessage(client mqtt.Client, msg mqtt.Message) {
+	log.Printf("Received message on topic: %s", msg.Topic())
+	var data DeviceMessage
+	if err := json.Unmarshal(msg.Payload(), &data); err != nil {
+		log.Printf("Error unmarshaling ArchiveBookmarkMessage: %v, payload: %s", err, msg.Payload())
+		return
+	}
+	log.Printf("Processing DeviceMessage: msg=%s", data.Message)
+
+	// --- 构建 Bark 消息 ---
+
+	// 1. 标题 (Title): 突出发送者
+	// 使用 emoji 让标题更生动
+	barkTitle := fmt.Sprintf("📟️有设备就绪")
+
+	// 2. 正文 (Body): 包含短信内容、运营商和时间
+	// 使用 Markdown 格式让内容更易读 (Bark 支持 Markdown)
+
+	barkBody := data.Message
+
+	// 3. 发送 Bark 通知
+	err := bark.SendToBark(
+		barkBody,
+		bark.WithTitle(barkTitle),
+		bark.WithGroup("Device"),
+		bark.WithLevel("active"),
+	)
+
+	if err != nil {
+		log.Printf("Error sending Device notification to Bark: %v", err)
+	} else {
+		log.Printf("Device notification sent to Bark successfully.")
+	}
+}
