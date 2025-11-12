@@ -1,82 +1,140 @@
-# AutoSSL
+# IoT Home - IoT Home Automation Service
 
-AutoSSL is an open-source project built on top of acme.sh, designed to provide an SSL certificate distribution service. With AutoSSL, you can generate SSL certificates on one server and distribute them to other servers via HTTP. This project is inspired by the [vx.link](https://vx.link) SSL certificate service.
+A Go-based IoT home automation backend service that connects IoT devices with mobile push notifications. The service receives SMS messages from ESP32 devices via MQTT protocol and forwards them to users' mobile devices through the Bark push notification service.
+
+## Workflow
+
+1. ESP32 device sends SMS data to Broker via MQTT
+2. Application subscribes to `esp32/sms` topic and receives JSON messages
+3. Parses message content (sender, content, operator, timestamp)
+4. Formats Bark notification (title, body, metadata)
+5. Sends push notification to user's mobile device via Bark API
 
 ## Features
 
-- **Centralized SSL Certificate Generation**: Generate SSL certificates on a single server.
-- **HTTP Distribution**: Distribute the generated certificates to other servers via HTTP.
-- **DNS Alias Mode**: Uses DNS alias mode for certificate generation. Please refer to the [acme.sh documentation](https://github.com/acmesh-official/acme.sh/wiki/DNS-alias-mode) for more details.
+- **MQTT Message Subscription** - Real-time monitoring of SMS data sent by ESP32 devices
+- **Push Notification Integration** - Forward messages to mobile devices via Bark service
+
+## Tech Stack
+
+- **Language**: Go 1.24.0
+- **Web Framework**: Echo v4.11.3
+- **MQTT Client**: Eclipse Paho MQTT v1.5.1
+- **Logging**: Uber Zap v1.26.0
+- **Containerization**: Docker (Debian Bookworm-slim)
+- **CI/CD**: GitHub Actions
 
 ## Getting Started
 
 ### Prerequisites
 
-- Docker
-- Docker Compose
+- Go 1.24.0 or higher
+- Docker (optional)
+- MQTT Broker (e.g., Mosquitto)
+- Bark push service
 
-### Installation
+### Local Development
 
-Create a `docker-compose.yml` file with the following content:
+1. **Clone the repository**
 
-```yaml
-version: '3.7'
-services:
-  autossl:
-    image: ghcr.io/pupilcc/autossl:master
-    container_name: autossl
-    restart: always
-    volumes:
-      - data:/root/data
-      - acme:/root/.acme.sh
-    ports:
-      - "1323:1323"
-    environment:
-      - DOMAIN=https://example.com
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=123456
-      - ACME_CA=letsencrypt
-      - ACME_EMAIL=example@gmail.com
-      - ACME_DNS=dns_cf
-      - ACME_ALIAS=alias.com
-      - CF_Zone_ID=xxxxxxxx
-      - CF_Token=xxxxxx
-
-volumes:
-  acme:
-  data:
+```bash
+git clone <repository-url>
+cd iot-home
 ```
 
-Run the following command to start the service:
-```sh
-docker-compose up -d
+2. **Configure environment variables**
+
+Create a `.env` file and configure the following parameters:
+
+```env
+BARK_API=https://xxxx.com
+BARK_KEY=your_bark_key_here
+MQTT_HOST=192.168.1.1
+MQTT_PORT=1883
 ```
 
-### Configuration
+3. **Install dependencies**
 
-- `DOMAIN`: The domain for the SSL certificate.
-- `ADMIN_USERNAME`: The username for the admin interface.
-- `ADMIN_PASSWORD`: The password for the admin interface.
-- `ACME_CA`: The Certificate Authority (e.g., letsencrypt).
-- `ACME_EMAIL`: The email address for ACME registration.
-- `ACME_DNS`: The DNS provider for ACME (e.g., dns_cf for Cloudflare).
-- `ACME_ALIAS`: The DNS alias mode for ACME.
-- `CF_Zone_ID`: The Cloudflare Zone ID.
-- `CF_Token`: The Cloudflare API token.
+```bash
+go mod download
+```
 
-### Certificate Download Script
+4. **Run the service**
 
-For detailed instructions on how to download the certificates, please refer to the [certificate download script](https://github.com/tmplink/KnowledgeBase/blob/main/vxlink/vxssl.md).
+```bash
+go run main.go
+```
 
-## License
+The service will start at `http://localhost:1323`.
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/pupilcc/autossl/blob/master/LICENSE) file for more details.
+## Configuration
 
-## Contributing
+### Environment Variables
 
-Contributions are welcome! Please open an issue or submit a pull request.
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `BARK_API` | Bark push service API URL | `https://xxxx.com` |
+| `BARK_KEY` | Bark service authentication key | `xxxx` |
+| `MQTT_HOST` | MQTT Broker host address | `192.168.1.1` |
+| `MQTT_PORT` | MQTT Broker port | `1883` |
 
-## Acknowledgments
+### MQTT Configuration
 
-- [acme.sh](https://github.com/acmesh-official/acme.sh)
-- [vx.link SSL Certificate Service](https://vx.link)
+Default subscription topic: `esp32/sms`
+
+Message format (JSON):
+```json
+{
+  "sender": "13800138000",
+  "content": "SMS content",
+  "operator": "China Mobile",
+  "timestamp": "2025-11-12 10:30:45"
+}
+```
+
+### Bark Push Configuration
+
+Push notifications support the following features:
+- Custom title and content
+- Message grouping (Group)
+- Notification level (Level): active, timeSensitive, passive
+- One-click copy (Copy)
+- Markdown format support
+
+
+## Project Structure
+
+```
+iot-home/
+├── api/                      # HTTP API routes and handlers
+│   └── index.go             # Base endpoint definitions
+├── config/                   # Configuration and initialization
+│   └── logger.go            # Logger configuration
+├── infrastructure/          # Core business logic
+│   ├── mqtt/               # MQTT protocol handling
+│   │   ├── config.go       # MQTT configuration structure
+│   │   ├── connection.go   # MQTT client management
+│   │   ├── consumer.go     # Message subscription handling
+│   │   └── message.go      # Message structure definitions
+│   ├── bark/               # Bark push service
+│   │   ├── config.go       # Bark configuration
+│   │   └── send.go         # Push logic
+│   └── util/               # Utility functions
+│       └── env.go          # Environment variable helpers
+├── main.go                  # Application entry point
+├── go.mod                   # Go module dependencies
+├── go.sum                   # Dependency checksums
+├── Dockerfile               # Docker build configuration
+├── .env                     # Environment variables (development)
+└── .github/
+    └── workflows/
+        └── release-docker-image.yml  # CI/CD pipeline
+```
+
+## Security Considerations
+
+- Do not commit `.env` file to version control
+- Use strong keys to protect Bark API Key
+- Use MQTT authentication in production environments
+- Recommended to use HTTPS/TLS encrypted communication
+
