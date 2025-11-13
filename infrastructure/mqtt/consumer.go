@@ -108,7 +108,13 @@ func HandleDeviceMessage(client mqtt.Client, msg mqtt.Message) {
 	// 2. 正文 (Body): 包含短信内容、运营商和时间
 	// 使用 Markdown 格式让内容更易读 (Bark 支持 Markdown)
 
-	barkBody := fmt.Sprintf("号码 %s 已准备就绪", data.LocalNumber)
+	barkBody := fmt.Sprintf(
+		"设备已准备就绪\n\n"+
+			"本机号码: %s\n"+
+			"运营商: %s\n",
+		data.LocalNumber,
+		data.Operator,
+	)
 
 	// 3. 发送 Bark 通知
 	err := bark.SendToBark(
