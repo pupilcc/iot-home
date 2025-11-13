@@ -49,7 +49,8 @@ func HandleSmsMessage(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Error unmarshaling ArchiveBookmarkMessage: %v, payload: %s", err, msg.Payload())
 		return
 	}
-	log.Printf("Processing SMS: sender=%s, content=%s, operator=%s, timestamp=%s", data.Sender, data.Content, data.Operator, data.Timestamp)
+	log.Printf("Processing SMS: sender=%s, content=%s, local_number=%s, operator=%s, timestamp=%s",
+		data.Sender, data.Content, data.LocalNumber, data.Operator, data.Timestamp)
 
 	// --- 构建 Bark 消息 ---
 
@@ -64,10 +65,12 @@ func HandleSmsMessage(client mqtt.Client, msg mqtt.Message) {
 		"%s\n\n"+
 			"发件号码: %s\n"+
 			"发件时间: %s\n\n"+
+			"本机号码: %s\n"+
 			"运营商: %s\n",
 		data.Content,
 		data.Sender,
 		data.Timestamp.Format(time.DateTime),
+		data.LocalNumber,
 		data.Operator,
 	)
 
@@ -94,7 +97,7 @@ func HandleDeviceMessage(client mqtt.Client, msg mqtt.Message) {
 		log.Printf("Error unmarshaling ArchiveBookmarkMessage: %v, payload: %s", err, msg.Payload())
 		return
 	}
-	log.Printf("Processing DeviceMessage: msg=%s", data.Message)
+	log.Printf("Processing DeviceMessage: local_number=%s", data.LocalNumber)
 
 	// --- 构建 Bark 消息 ---
 
@@ -105,7 +108,7 @@ func HandleDeviceMessage(client mqtt.Client, msg mqtt.Message) {
 	// 2. 正文 (Body): 包含短信内容、运营商和时间
 	// 使用 Markdown 格式让内容更易读 (Bark 支持 Markdown)
 
-	barkBody := data.Message
+	barkBody := fmt.Sprintf("号码 %s 已准备就绪", data.LocalNumber)
 
 	// 3. 发送 Bark 通知
 	err := bark.SendToBark(
