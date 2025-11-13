@@ -55,7 +55,7 @@ func HandleSmsMessage(client mqtt.Client, msg mqtt.Message) {
 
 	// 1. 标题 (Title): 突出发送者
 	// 使用 emoji 让标题更生动
-	barkTitle := fmt.Sprintf("✉️ 新短信来自 %s", data.Sender)
+	barkTitle := "✉️ 新短信"
 
 	// 2. 正文 (Body): 包含短信内容、运营商和时间
 	// 使用 Markdown 格式让内容更易读 (Bark 支持 Markdown)
